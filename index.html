@@ -3,37 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Element Avcısı v3 - GitHub Sürümü</title>
+    <title>Element Avcısı - Kesin Çözüm</title>
+    <!-- İlk koddaki çalışan kütüphane yöntemi -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background: #0f172a; color: #f8fafc; padding: 20px; margin: 0; }
-        #soru-konteynir { background: #1e293b; padding: 25px; border-radius: 20px; border: 2px solid #384455; margin: 10px auto 20px; max-width: 500px; min-height: 100px; display: flex; align-items: center; justify-content: center; }
-        #soru-metni { font-size: 1.3rem; line-height: 1.5; margin: 0; }
-        #reader { width: 100%; max-width: 400px; margin: 0 auto; border: 4px solid #334155; border-radius: 20px; overflow: hidden; background: #000; }
-        #bildirim { font-size: 1.1rem; margin: 15px; font-weight: bold; min-height: 40px; }
-        .dogru { color: #22c55e; }
-        .yanlis { color: #ef4444; }
-        #istatistik { font-size: 1rem; color: #94a3b8; margin-top: 10px; }
-        #start-button { padding: 15px 30px; font-size: 1.2rem; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; margin-top: 20px; }
+        body { font-family: sans-serif; text-align: center; background: #1a1a2e; color: white; padding: 20px; }
+        #soru-alani { background: #16213e; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #0f3460; }
+        #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 10px; overflow: hidden; }
+        #bildirim { font-size: 1.2rem; margin: 15px; font-weight: bold; min-height: 30px; }
+        .dogru { color: #4ee44e; }
+        .yanlis { color: #ff4d4d; }
+        .skor { color: #888; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>KİMYA SINAV MODU</h1>
+    <h1>KİMYA ELEMENT AVCISI</h1>
     
-    <div id="soru-konteynir">
-        <p id="soru-metni">Başlamak için butona basın...</p>
+    <div id="soru-alani">
+        <h2 id="soru-metni">Yükleniyor...</h2>
     </div>
 
-    <!-- Bazı telefonlar kamera için kullanıcı etkileşimi (buton) bekler -->
-    <button id="start-button" onclick="initGame()">OYUNU BAŞLAT</button>
-
-    <div id="reader" style="display:none;"></div>
+    <!-- QR Okuyucu Buraya Gelecek -->
+    <div id="reader"></div>
     
-    <div id="bildirim"></div>
-    <div id="istatistik">Puan: <span id="puan">0</span> | Kalan Soru: <span id="kalan">0</span></div>
+    <div id="bildirim">QR Kodu Okutun</div>
+    <div class="skor">Puan: <span id="puan">0</span> | Kalan Soru: <span id="kalan">0</span></div>
 
     <script>
+        // Geniş Soru Havuzu
         let soruHavuzu = [
             { s: "Evrenin en hafif ve ilk elementi nedir?", c: "hidrojen" },
             { s: "Uçan balonlarda kullanılan yanıcı olmayan soygaz hangisidir?", c: "helyum" },
@@ -48,82 +46,71 @@
             { s: "Cips paketlerine tazeliği korumak için basılan gaz?", c: "azot" },
             { s: "Termometrelerde kullanılan tek sıvı metal?", c: "civa" },
             { s: "Mutfak folyosu yapımında kullanılan hafif metal?", c: "aluminyum" },
-            { s: "Havuzları dezenfekte etmek için kullanılan element?", c: "klor" },
             { s: "Elmas ve kurşun kalemin yapısındaki element?", c: "karbon" },
             { s: "Çok değerli, paslanmayan sarı renkli takı metali?", c: "altin" },
             { s: "Işıklı tabelalarda kullanılan turuncu soygaz?", c: "neon" },
             { s: "Kibrit ucu yapımında kullanılan element?", c: "fosfor" },
-            { s: "Yarı iletkenlerde ve cam sanayiinde kullanılan element?", c: "silisyum" },
-            { s: "Paslanmaz çelik yapımında kullanılan parlak metal?", c: "krom" },
-            { s: "Fotoğrafçılıkta ve takıda kullanılan kıymetli metal?", c: "gumus" },
-            { s: "Çeliklerin kaplanmasında (galvaniz) kullanılan metal?", c: "cinko" },
-            { s: "Radyasyon kalkanlarında kullanılan ağır metal?", c: "kursun" },
-            { s: "Tentürdiyot yapımında kullanılan ametal?", c: "iyot" }
+            { s: "Çeliklerin kaplanmasında (galvaniz) kullanılan metal?", c: "cinko" }
         ];
 
         let guncelSoru = {};
         let puan = 0;
-        let bekliyor = false;
-        let html5QrCode;
-
-        async function initGame() {
-            document.getElementById('start-button').style.display = 'none';
-            document.getElementById('reader').style.display = 'block';
-            
-            html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { fps: 20, qrbox: { width: 250, height: 250 } };
-
-            try {
-                //facingMode: environment -> Arka kamerayı zorlar
-                await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-                yeniSoruSec();
-            } catch (err) {
-                console.error("Kamera hatası:", err);
-                document.getElementById('bildirim').innerText = "Kamera açılamadı. Lütfen izin verin!";
-                document.getElementById('bildirim').className = "yanlis";
-            }
-        }
+        let kilitli = false;
 
         function yeniSoruSec() {
             if (soruHavuzu.length === 0) {
-                document.getElementById('soru-metni').innerText = "TEBRİKLER! TÜM SORULAR BİTİRDİNİZ.";
-                document.getElementById('bildirim').innerText = "Sınav Tamamlandı.";
+                document.getElementById('soru-metni').innerText = "TEBRİKLER! TÜM SORULAR BİTTİ.";
+                document.getElementById('bildirim').innerText = "Sınav Başarıyla Tamamlandı.";
                 return;
             }
 
-            bekliyor = false;
-            document.getElementById('bildirim').innerText = "Kodu Okutun...";
+            kilitli = false;
+            document.getElementById('bildirim').innerText = "QR Kod Bekleniyor...";
             document.getElementById('bildirim').className = "";
             document.getElementById('kalan').innerText = soruHavuzu.length;
             
             let index = Math.floor(Math.random() * soruHavuzu.length);
             guncelSoru = soruHavuzu.splice(index, 1)[0]; 
-            
             document.getElementById('soru-metni').innerText = guncelSoru.s;
         }
 
         function onScanSuccess(decodedText) {
-            if (bekliyor) return;
+            if (kilitli) return;
 
             let okunan = decodedText.toLowerCase().trim();
             
             if (okunan === guncelSoru.c) {
-                bekliyor = true;
+                kilitli = true;
                 puan += 10;
                 document.getElementById('puan').innerText = puan;
-                document.getElementById('bildirim').innerText = "DOĞRU! 🎉";
+                document.getElementById('bildirim').innerText = "DOĞRU! ✅";
                 document.getElementById('bildirim').className = "dogru";
                 
+                // 2 saniye sonra otomatik yeni soru
                 setTimeout(yeniSoruSec, 2000);
             } else {
                 document.getElementById('bildirim').innerText = "YANLIŞ! TEKRAR DENE ❌";
                 document.getElementById('bildirim').className = "yanlis";
-                setTimeout(() => {
-                    if(!bekliyor) document.getElementById('bildirim').innerText = "Okutmaya devam et...";
-                }, 1500);
+                // Yanlışta kilitlenmez, okumaya devam eder
             }
         }
+
+        // İLK KODDAKİ ÇALIŞAN BAŞLATICI
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10, 
+                qrbox: {width: 250, height: 250},
+                rememberLastUsedCamera: true,
+                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+            },
+            /* verbose= */ false
+        );
+
+        html5QrcodeScanner.render(onScanSuccess);
+        
+        // İlk soruyu başlat
+        yeniSoruSec();
     </script>
 </body>
 </html>
